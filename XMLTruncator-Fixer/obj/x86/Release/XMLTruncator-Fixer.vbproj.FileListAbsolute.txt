@@ -1,0 +1,16 @@
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\bin\Release\XMLTruncator-Fixer.exe.manifest
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\bin\Release\XMLTruncator-Fixer.application
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\bin\Release\XMLTruncator-Fixer.exe
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\bin\Release\XMLTruncator-Fixer.pdb
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\bin\Release\XMLTruncator-Fixer.xml
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\ResolveAssemblyReference.cache
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncatorFixer.AboutBox1.resources
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncatorFixer.Form1.resources
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncatorFixer.Resources.resources
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\GenerateResource-ResGen.read.1.tlog
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\GenerateResource-ResGen.write.1.tlog
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncator-Fixer.exe.manifest
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncator-Fixer.application
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncator-Fixer.exe
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncator-Fixer.xml
+e:\windows.old.000\users\socrtwo\documents\visual studio 2010\Projects\XMLTruncator-Fixer\XMLTruncator-Fixer\obj\x86\Release\XMLTruncator-Fixer.pdb
