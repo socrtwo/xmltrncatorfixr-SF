@@ -1,9 +1,18 @@
-# XML Truncator-Fixer
+<!--MODERNIZED:v1-->
+# Xmltrncatorfixr
 
-<!--PAGES_LINK_BANNER-->
-> 🌐 **Live page:** [https://socrtwo.github.io/xmltrncatorfixr-SF/](https://socrtwo.github.io/xmltrncatorfixr-SF/)  
-> 📦 **Releases:** [github.com/socrtwo/xmltrncatorfixr-SF/releases](https://github.com/socrtwo/xmltrncatorfixr-SF/releases)
-<!--/PAGES_LINK_BANNER-->
+> Migrated from SourceForge via SF2GH Migrator
+
+[![Live page](https://img.shields.io/badge/live-page-ff2e93?style=for-the-badge)](https://socrtwo.github.io/xmltrncatorfixr-SF/)
+[![Releases](https://img.shields.io/github/v/release/socrtwo/xmltrncatorfixr-SF?style=for-the-badge&color=7c3aed)](https://github.com/socrtwo/xmltrncatorfixr-SF/releases)
+[![License](https://img.shields.io/github/license/socrtwo/xmltrncatorfixr-SF?style=for-the-badge&color=22d3ee)](https://github.com/socrtwo/xmltrncatorfixr-SF/blob/main/LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/socrtwo/xmltrncatorfixr-SF?style=for-the-badge&color=34d399)](https://github.com/socrtwo/xmltrncatorfixr-SF/commits)
+
+🌐 **Live:** https://socrtwo.github.io/xmltrncatorfixr-SF/  
+📦 **Downloads:** [Releases](https://github.com/socrtwo/xmltrncatorfixr-SF/releases)  
+📂 **Source:** [socrtwo/xmltrncatorfixr-SF](https://github.com/socrtwo/xmltrncatorfixr-SF)
+
+---
 
 Finds the first XML error in a file, truncates just before it, then uses xmllint to add correct closing tags. Configurable truncation offset (default: 50 characters before the error).
 
@@ -63,3 +72,25 @@ Contributions are welcome! Feel free to:
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## 📜 SourceForge heritage
+
+This project originated on **SourceForge** before being migrated to GitHub. The legacy SourceForge entry, if still available, can be searched at:
+
+🔗 https://sourceforge.net/projects/xmltrncatorfixr/
+
+The repository here at `socrtwo/xmltrncatorfixr-SF` is the canonical, actively-maintained home. All future updates, issue tracking, and releases happen on GitHub.
+
+## 🛠️ Contributing
+
+Issues and pull requests are welcome at [https://github.com/socrtwo/xmltrncatorfixr-SF/issues](https://github.com/socrtwo/xmltrncatorfixr-SF/issues).
+
+## 📝 License
+
+See the [LICENSE](https://github.com/socrtwo/xmltrncatorfixr-SF/blob/main/LICENSE) file in this repository. If no license file is present, the project is shared as-is for reference and personal use; please contact the maintainer for other use cases.
+
+---
+
+*Maintained by [@socrtwo](https://github.com/socrtwo)*
