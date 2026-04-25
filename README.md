@@ -1,5 +1,10 @@
 # XML Truncator-Fixer
 
+<!--PAGES_LINK_BANNER-->
+> 🌐 **Live page:** [https://socrtwo.github.io/xmltrncatorfixr-SF/](https://socrtwo.github.io/xmltrncatorfixr-SF/)  
+> 📦 **Releases:** [github.com/socrtwo/xmltrncatorfixr-SF/releases](https://github.com/socrtwo/xmltrncatorfixr-SF/releases)
+<!--/PAGES_LINK_BANNER-->
+
 Finds the first XML error in a file, truncates just before it, then uses xmllint to add correct closing tags. Configurable truncation offset (default: 50 characters before the error).
 
 **Language:** Perl  
