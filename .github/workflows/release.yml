@@ -1,0 +1,266 @@
+name: Release (multi-platform)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0). If empty, uses current commit SHA.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: xmltrncatorfixr
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+      version: ${{ steps.t.outputs.version }}
+    steps:
+      - id: t
+        shell: bash
+        run: |
+          tag="${{ github.event.inputs.tag }}"
+          if [ -z "$tag" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+            tag="${{ github.ref_name }}"
+          fi
+          if [ -z "$tag" ]; then
+            tag="v0.0.0-${GITHUB_SHA::7}"
+          fi
+          version="${tag#v}"
+          echo "tag=$tag"         >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: resolve
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Restore & build (Release|x86)
+        shell: pwsh
+        run: |
+          msbuild "XMLTruncator-Fixer.sln" /t:Restore /p:Configuration=Release /p:Platform=x86
+          msbuild "XMLTruncator-Fixer.sln" /t:Build   /p:Configuration=Release /p:Platform=x86 /p:SignManifests=false
+      - name: Stage Windows release
+        shell: pwsh
+        run: |
+          $stage = "stage/xmltrncatorfixr-windows"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item "XMLTruncator-Fixer/bin/Release/*" $stage -Recurse -Force
+          Copy-Item "XMLTruncator-Fixer/readme.txt" $stage -Force
+          Copy-Item "LICENSE" $stage -Force
+          Copy-Item "README.md" $stage -Force
+          Compress-Archive -Path "$stage/*" -DestinationPath "xmltrncatorfixr-${{ needs.resolve.outputs.version }}-windows-x86.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: xmltrncatorfixr-*-windows-x86.zip
+
+  unix-cli:
+    needs: resolve
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux, macos, chromeos]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage CLI bundle for ${{ matrix.platform }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="stage/$APP_NAME-${{ matrix.platform }}"
+          mkdir -p "$stage/bin"
+          install -m 0755 cli/xmltrncatorfixr.pl "$stage/bin/xmltrncatorfixr.pl"
+          install -m 0755 cli/xmltrncatorfixr.py "$stage/bin/xmltrncatorfixr.py"
+          cat > "$stage/bin/xmltrncatorfixr" <<'SH'
+          #!/usr/bin/env bash
+          # Front-end that prefers the Python implementation, falls back to Perl.
+          dir="$(cd "$(dirname "$0")" && pwd)"
+          if command -v python3 >/dev/null 2>&1; then
+            exec python3 "$dir/xmltrncatorfixr.py" "$@"
+          elif command -v perl >/dev/null 2>&1; then
+            exec perl "$dir/xmltrncatorfixr.pl" "$@"
+          else
+            echo "xmltrncatorfixr: requires python3 or perl in PATH" >&2
+            exit 127
+          fi
+          SH
+          chmod +x "$stage/bin/xmltrncatorfixr"
+          cp README.md LICENSE "$stage/"
+          case "${{ matrix.platform }}" in
+            macos)
+              cat > "$stage/INSTALL.txt" <<'TXT'
+          XML Truncator-Fixer for macOS
+
+          Requirements: macOS 10.13+ with /usr/bin/python3 and /usr/bin/xmllint
+          (both ship by default; xmllint is part of the Command Line Tools).
+
+          Install:
+            sudo cp bin/xmltrncatorfixr* /usr/local/bin/
+
+          Run:
+            xmltrncatorfixr path/to/broken.xml
+          TXT
+              ;;
+            linux)
+              cat > "$stage/INSTALL.txt" <<'TXT'
+          XML Truncator-Fixer for Linux
+
+          Requirements: python3 (or perl) and xmllint
+            Debian/Ubuntu:  sudo apt-get install -y libxml2-utils python3
+            Fedora/RHEL:    sudo dnf install -y libxml2 python3
+            Arch:           sudo pacman -S libxml2 python
+
+          Install:
+            sudo install -m 0755 bin/xmltrncatorfixr* /usr/local/bin/
+
+          Run:
+            xmltrncatorfixr path/to/broken.xml
+          TXT
+              ;;
+            chromeos)
+              cat > "$stage/INSTALL.txt" <<'TXT'
+          XML Truncator-Fixer for ChromeOS
+
+          Run inside the ChromeOS Linux (Crostini) container.
+
+          Enable Linux:
+            Settings -> Advanced -> Developers -> Linux development environment
+
+          Inside the Linux terminal:
+            sudo apt-get install -y libxml2-utils python3
+            sudo install -m 0755 bin/xmltrncatorfixr* /usr/local/bin/
+            xmltrncatorfixr path/to/broken.xml
+
+          You can also install the Web/PWA version from
+          https://socrtwo.github.io/xmltrncatorfixr-SF/app/ - that runs without
+          the Linux container.
+          TXT
+              ;;
+          esac
+          ( cd stage && tar -czf "../$APP_NAME-${{ needs.resolve.outputs.version }}-${{ matrix.platform }}.tar.gz" "$APP_NAME-${{ matrix.platform }}" )
+          ( cd stage && zip -qr  "../$APP_NAME-${{ needs.resolve.outputs.version }}-${{ matrix.platform }}.zip"    "$APP_NAME-${{ matrix.platform }}" )
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: |
+            xmltrncatorfixr-*-${{ matrix.platform }}.tar.gz
+            xmltrncatorfixr-*-${{ matrix.platform }}.zip
+
+  web-pwa:
+    needs: resolve
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [web, android, ios]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage PWA bundle for ${{ matrix.platform }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="stage/$APP_NAME-${{ matrix.platform }}"
+          mkdir -p "$stage"
+          cp -r web/. "$stage/"
+          cp README.md LICENSE "$stage/"
+          case "${{ matrix.platform }}" in
+            web)
+              cat > "$stage/INSTALL.txt" <<'TXT'
+          XML Truncator-Fixer - Web edition
+
+          Quick start (no install):
+            Open https://socrtwo.github.io/xmltrncatorfixr-SF/app/
+
+          Self-host:
+            Serve this folder over HTTPS, then load /app/ in any modern browser.
+            All processing happens on-device - files are never uploaded.
+          TXT
+              ;;
+            android)
+              cat > "$stage/INSTALL.txt" <<'TXT'
+          XML Truncator-Fixer for Android (PWA)
+
+          Install on-device:
+            1. Open https://socrtwo.github.io/xmltrncatorfixr-SF/app/ in Chrome
+               (or any Chromium-based browser).
+            2. Tap the menu -> "Install app" / "Add to Home screen".
+            3. Launch from the home screen like any installed app.
+
+          The app works fully offline once installed. Repackage this folder with
+          PWA Builder (https://www.pwabuilder.com/) to produce a TWA / .aab if
+          you want a Play Store listing.
+          TXT
+              ;;
+            ios)
+              cat > "$stage/INSTALL.txt" <<'TXT'
+          XML Truncator-Fixer for iOS / iPadOS (PWA)
+
+          Install on-device:
+            1. Open https://socrtwo.github.io/xmltrncatorfixr-SF/app/ in Safari
+               (must be Safari for "Add to Home Screen" on iOS).
+            2. Tap the Share button -> "Add to Home Screen".
+            3. Launch from the home screen.
+
+          Note: iOS PWAs run sandboxed; the app reads files via the standard
+          file picker. All processing happens on-device.
+          TXT
+              ;;
+          esac
+          ( cd stage && zip -qr "../$APP_NAME-${{ needs.resolve.outputs.version }}-${{ matrix.platform }}.zip" "$APP_NAME-${{ matrix.platform }}" )
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: xmltrncatorfixr-*-${{ matrix.platform }}.zip
+
+  release:
+    needs: [resolve, windows, unix-cli, web-pwa]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: List artifacts
+        run: ls -la dist
+      - name: Create / update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes="$(cat <<'EOF'
+          ## XML Truncator-Fixer ${TAG}
+
+          Multi-platform release. Downloads:
+
+          | Platform | Asset |
+          |---|---|
+          | Windows | `xmltrncatorfixr-*-windows-x86.zip` (.NET Framework 4.8) |
+          | macOS | `xmltrncatorfixr-*-macos.zip` / `.tar.gz` (CLI, requires xmllint) |
+          | Linux | `xmltrncatorfixr-*-linux.zip` / `.tar.gz` (CLI, requires xmllint) |
+          | ChromeOS | `xmltrncatorfixr-*-chromeos.zip` / `.tar.gz` (Crostini CLI) |
+          | Android | `xmltrncatorfixr-*-android.zip` (installable PWA) |
+          | iOS | `xmltrncatorfixr-*-ios.zip` (installable PWA via Safari) |
+          | Web | `xmltrncatorfixr-*-web.zip` (or use the hosted app) |
+
+          Hosted web app: https://socrtwo.github.io/xmltrncatorfixr-SF/app/
+
+          See `INSTALL.txt` inside each archive for per-platform setup.
+          EOF
+          )"
+          notes="${notes//\$\{TAG\}/$TAG}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit   "$TAG" --notes "$notes"
+          else
+            gh release create "$TAG" dist/* --title "XML Truncator-Fixer $TAG" --notes "$notes"
+          fi
