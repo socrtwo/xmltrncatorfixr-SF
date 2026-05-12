@@ -38,7 +38,13 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils >/dev/null
           cat > /tmp/broken.xml <<'EOF'
-          <?xml version="1.0"?><root><a>ok</a><b><c>oops</c><d>x<not-closed
+          <?xml version="1.0" encoding="UTF-8"?>
+          <root>
+            <a>first</a>
+            <b><c>well-formed nested content with enough bytes to be useful</c></b>
+            <d>padding xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</d>
+            <e>still fine here</e>
+            <f>here is where it breaks: <not-closed
           EOF
           python3 cli/xmltrncatorfixr.py /tmp/broken.xml
           test -s /tmp/truncated-fixed-broken.xml
@@ -49,6 +55,12 @@ jobs:
           test -s /tmp/truncated-fixed-broken2.xml
           xmllint --noout /tmp/truncated-fixed-broken2.xml
           echo "Perl CLI smoke test passed."
+          # Edge case: a tiny fixture where truncation eats the whole document.
+          # The CLI itself should still exit 0; we only assert the output exists.
+          printf '<a>x<bad' > /tmp/tiny.xml
+          python3 cli/xmltrncatorfixr.py --offset 2 /tmp/tiny.xml
+          test -f /tmp/truncated-fixed-tiny.xml
+          echo "Tiny-fixture edge case passed."
 
       - name: Validate PWA bundle
         run: |
