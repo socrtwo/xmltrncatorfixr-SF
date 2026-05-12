@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0322">
+<meta name="description" content="Browser-based XML Truncator-Fixer. Repair corrupt XML / Office Open XML files (docx, xlsx, pptx) entirely on-device. Works on Windows, macOS, Linux, ChromeOS, Android, iOS, web.">
+<title>XML Truncator-Fixer</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<style>
+  :root { color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: radial-gradient(ellipse at top, #0f0322 0%, #08010f 70%);
+    color: #f5f3ff;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .orbs { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4; animation: float 18s ease-in-out infinite; }
+  .o1 { width: 480px; height: 480px; background: #ff2e93; top: -140px; left: -120px; }
+  .o2 { width: 420px; height: 420px; background: #7c3aed; bottom: -140px; right: -100px; animation-delay: -6s; }
+  .o3 { width: 360px; height: 360px; background: #22d3ee; top: 40%; left: 45%; opacity: 0.28; animation-delay: -12s; }
+  @keyframes float {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(40px,-30px) scale(1.08); }
+    66% { transform: translate(-30px,30px) scale(.95); }
+  }
+  .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+  header { margin-bottom: 28px; }
+  h1 {
+    font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ff2e93 0%, #22d3ee 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 6px;
+  }
+  header p { color: rgba(245,243,255,0.72); font-size: 1rem; }
+  .card {
+    padding: 26px 22px;
+    background: rgba(20,10,40,0.55);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+    margin-bottom: 18px;
+  }
+  label { display: block; font-weight: 600; font-size: 0.92rem; margin-bottom: 8px; color: rgba(245,243,255,0.85); }
+  .drop {
+    border: 2px dashed rgba(124,58,237,0.55);
+    border-radius: 14px;
+    padding: 28px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .drop.hover { background: rgba(124,58,237,0.12); border-color: #22d3ee; }
+  .drop input { display: none; }
+  .drop .hint { color: rgba(245,243,255,0.6); font-size: 0.88rem; margin-top: 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 14px; }
+  .row > * { flex: 1 1 180px; }
+  input[type="number"] {
+    width: 100%; padding: 10px 12px;
+    background: rgba(0,0,0,0.35); color: #f5f3ff;
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+    font-size: 0.95rem; font-family: inherit;
+  }
+  button {
+    padding: 11px 18px;
+    background: linear-gradient(135deg, #ff2e93 0%, #7c3aed 100%);
+    color: #fff; border: 0; border-radius: 10px;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    transition: transform .12s, filter .12s;
+    font-family: inherit;
+  }
+  button:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
+  button.secondary { background: rgba(20,10,40,0.6); border: 1px solid rgba(255,255,255,0.12); }
+  .status {
+    margin-top: 14px; padding: 12px 14px;
+    background: rgba(0,0,0,0.3); border-radius: 10px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.88rem;
+    color: rgba(245,243,255,0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 200px; overflow: auto;
+  }
+  .status.ok { border-color: rgba(34,197,94,0.4); }
+  .status.err { border-color: rgba(239,68,68,0.5); }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: rgba(245,243,255,0.7); font-size: 0.9rem; padding: 4px 0; }
+  pre {
+    background: rgba(0,0,0,0.4); padding: 12px 14px; border-radius: 10px;
+    overflow-x: auto; font-size: 0.82rem; max-height: 320px;
+    border: 1px solid rgba(255,255,255,0.06);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    color: #e5e7eb;
+  }
+  .meta { font-size: 0.84rem; color: rgba(245,243,255,0.55); margin-top: 18px; text-align: center; }
+  .meta a { color: rgba(245,243,255,0.75); }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    background: rgba(34,211,238,0.18); color: #67e8f9;
+    font-size: 0.72rem; font-weight: 600; margin-left: 6px; vertical-align: middle;
+  }
+  @media (max-width: 600px) { h1 { font-size: 1.7rem; } .wrap { padding: 28px 16px 60px; } }
+</style>
+</head>
+<body>
+<div class="orbs" aria-hidden="true">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+</div>
+<div class="wrap">
+  <header>
+    <h1>XML Truncator-Fixer <span class="pill">PWA</span></h1>
+    <p>Repair corrupt XML, including <code>document.xml</code> parts of broken Office Open XML files (docx, xlsx, pptx). Runs entirely on your device — your files are never uploaded.</p>
+  </header>
+
+  <section class="card">
+    <label for="file">Input file</label>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".xml,.docx,.xlsx,.pptx,.odt,.ods,.odp,.rels,.txt,application/xml,text/xml">
+      <div><strong>Drop a file here</strong> or click to browse</div>
+      <div class="hint">XML, DOCX/XLSX/PPTX (parts will be extracted), or any text file</div>
+    </label>
+
+    <div class="row">
+      <div>
+        <label for="offset">Safety offset (bytes)</label>
+        <input type="number" id="offset" value="50" min="0" max="100000">
+      </div>
+      <div style="display:flex; gap:10px; align-items:flex-end;">
+        <button id="run" disabled>Fix & download</button>
+        <button id="clear" class="secondary" type="button">Clear</button>
+      </div>
+    </div>
+
+    <div class="status" id="status">Drop or pick a file to begin.</div>
+
+    <details>
+      <summary>Show error detail</summary>
+      <pre id="errdetail">(none yet)</pre>
+    </details>
+  </section>
+
+  <p class="meta">
+    Source on <a href="https://github.com/socrtwo/xmltrncatorfixr-SF" target="_blank" rel="noopener">GitHub</a>
+    &middot; <a href="../">Project page</a>
+    &middot; v1.0.0
+  </p>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const fileInput = $('file');
+  const drop      = $('drop');
+  const runBtn    = $('run');
+  const clearBtn  = $('clear');
+  const offsetEl  = $('offset');
+  const statusEl  = $('status');
+  const errEl     = $('errdetail');
+
+  let currentFile = null;
+
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function setFile(f) {
+    currentFile = f;
+    runBtn.disabled = !f;
+    if (f) setStatus(`Loaded: ${f.name} (${f.size.toLocaleString()} bytes). Ready.`);
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) setFile(f);
+  });
+
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation(); drop.classList.add('hover');
+  }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation(); drop.classList.remove('hover');
+  }));
+  drop.addEventListener('drop', (e) => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    setFile(null);
+    setStatus('Cleared. Drop or pick a file to begin.');
+    errEl.textContent = '(none yet)';
+  });
+
+  function findFirstParseError(text) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'application/xml');
+    const err = doc.getElementsByTagName('parsererror')[0];
+    if (!err) return null;
+    const msg = err.textContent || '';
+    let line = null, col = null;
+    const m1 = msg.match(/[Ll]ine\s+Number\s*(\d+)[,\s]+Column\s*(\d+)/);
+    const m2 = !m1 && msg.match(/[Ll]ine\s+(\d+)[,\s]+[Cc]olumn\s+(\d+)/);
+    const m3 = !m1 && !m2 && msg.match(/:(\d+):(\d+):/);
+    const m = m1 || m2 || m3;
+    if (m) { line = +m[1]; col = +m[2]; }
+    return { message: msg.trim(), line, col };
+  }
+
+  function lineColToByteOffset(bytes, line, col) {
+    if (!line) return bytes.length;
+    let cur = 1, i = 0;
+    while (i < bytes.length && cur < line) {
+      if (bytes[i] === 0x0A) cur++;
+      i++;
+    }
+    return i + Math.max(0, (col || 1) - 1);
+  }
+
+  function bytesToString(bytes) {
+    return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+  }
+
+  function closeOpenTags(snippet) {
+    const stack = [];
+    const re = /<\/?([A-Za-z_][\w.:-]*)([^>]*)?>/g;
+    let m;
+    while ((m = re.exec(snippet)) !== null) {
+      const full = m[0], name = m[1];
+      if (full.startsWith('</')) {
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i] === name) { stack.splice(i, 1); break; }
+        }
+      } else if (!full.endsWith('/>')) {
+        if (!/^(meta|br|hr|img|input|area|base|col|embed|link|param|source|track|wbr)$/i.test(name)) {
+          stack.push(name);
+        }
+      }
+    }
+    return stack.reverse().map(t => `</${t}>`).join('');
+  }
+
+  function trimToLastWellFormedBoundary(snippet) {
+    const lastClose = snippet.lastIndexOf('>');
+    if (lastClose < 0) return snippet;
+    const tail = snippet.slice(lastClose + 1);
+    if (/<[^>]*$/.test(snippet.slice(0, lastClose + 1) + tail)) {
+      return snippet.slice(0, lastClose + 1);
+    }
+    return snippet.slice(0, lastClose + 1);
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+  }
+
+  async function fixXml(arrayBuf, offset) {
+    const bytes = new Uint8Array(arrayBuf);
+    const text = bytesToString(bytes);
+    const err = findFirstParseError(text);
+    if (!err) {
+      return { ok: true, output: bytes, message: 'No parser error detected. Original file returned unchanged.' };
+    }
+    const errByte = lineColToByteOffset(bytes, err.line, err.col);
+    const truncTo = Math.max(0, errByte - offset);
+    const truncated = bytes.slice(0, truncTo);
+    let snippet = bytesToString(truncated);
+    snippet = trimToLastWellFormedBoundary(snippet);
+    const closing = closeOpenTags(snippet);
+    const fixed = snippet + closing;
+    const out = new TextEncoder().encode(fixed);
+    return {
+      ok: true,
+      output: out,
+      error: err,
+      truncTo,
+      errByte,
+      addedClose: closing,
+      message: `First error at line ${err.line || '?'}, col ${err.col || '?'} (byte ~${errByte}). Truncated to ${truncTo} bytes, appended ${closing.length} bytes of closing tags.`,
+    };
+  }
+
+  async function fixDocx(arrayBuf, offset) {
+    if (typeof JSZip === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    const zip = await JSZip.loadAsync(arrayBuf);
+    const xmlNames = [];
+    zip.forEach((path, entry) => {
+      if (!entry.dir && /\.(xml|rels)$/i.test(path)) xmlNames.push(path);
+    });
+    const fixed = [];
+    for (const name of xmlNames) {
+      const text = await zip.file(name).async('string');
+      const err = findFirstParseError(text);
+      if (!err) continue;
+      const bytes = new TextEncoder().encode(text);
+      const errByte = lineColToByteOffset(bytes, err.line, err.col);
+      const truncTo = Math.max(0, errByte - offset);
+      const trunc = bytesToString(bytes.slice(0, truncTo));
+      const trimmed = trimToLastWellFormedBoundary(trunc);
+      const out = trimmed + closeOpenTags(trimmed);
+      zip.file(name, out);
+      fixed.push({ name, line: err.line, col: err.col, errByte, truncTo });
+    }
+    const blob = await zip.generateAsync({ type: 'uint8array' });
+    return {
+      ok: true,
+      output: blob,
+      fixedParts: fixed,
+      message: fixed.length
+        ? `Repaired ${fixed.length} XML part(s) inside the archive: ` +
+          fixed.map(f => `${f.name} (line ${f.line || '?'})`).join(', ')
+        : 'No broken XML parts found inside the archive.',
+    };
+  }
+
+  runBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    runBtn.disabled = true;
+    setStatus('Working…');
+    errEl.textContent = '';
+    const offset = Math.max(0, parseInt(offsetEl.value, 10) || 0);
+    try {
+      const buf = await currentFile.arrayBuffer();
+      const isOffice = /\.(docx|xlsx|pptx|odt|ods|odp)$/i.test(currentFile.name);
+      const result = isOffice ? await fixDocx(buf, offset) : await fixXml(buf, offset);
+      const baseName = currentFile.name.replace(/^(truncated-fixed-)?/, 'truncated-fixed-');
+      const mime = isOffice ? currentFile.type || 'application/octet-stream' : 'application/xml';
+      downloadBlob(new Blob([result.output], { type: mime }), baseName);
+      setStatus(result.message, 'ok');
+      if (result.error) errEl.textContent = result.error.message;
+      else if (result.fixedParts) errEl.textContent = JSON.stringify(result.fixedParts, null, 2);
+      else errEl.textContent = '(file was already well-formed)';
+    } catch (e) {
+      setStatus('Failed: ' + (e && e.message ? e.message : String(e)), 'err');
+      errEl.textContent = (e && e.stack) || String(e);
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('../sw.js').catch(() => {});
+    });
+  }
+})();
+</script>
+</body>
+</html>

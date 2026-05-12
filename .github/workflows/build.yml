@@ -9,7 +9,7 @@ on:
 
 jobs:
   lint:
-    name: Perl Syntax Check
+    name: Lint Perl, Python, and PWA bundle
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +27,35 @@ jobs:
           else
             echo "All Perl files passed syntax check!"
           fi
+
+      - name: Check Python syntax
+        run: |
+          echo "Checking Python files..."
+          python3 -m compileall -q cli || (echo "::error::Python compile failed"; exit 1)
+          echo "All Python files compile."
+
+      - name: Smoke-test CLI on a broken XML fixture
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils >/dev/null
+          cat > /tmp/broken.xml <<'EOF'
+          <?xml version="1.0"?><root><a>ok</a><b><c>oops</c><d>x<not-closed
+          EOF
+          python3 cli/xmltrncatorfixr.py /tmp/broken.xml
+          test -s /tmp/truncated-fixed-broken.xml
+          xmllint --noout /tmp/truncated-fixed-broken.xml
+          echo "Python CLI smoke test passed."
+          cp /tmp/broken.xml /tmp/broken2.xml
+          perl cli/xmltrncatorfixr.pl /tmp/broken2.xml
+          test -s /tmp/truncated-fixed-broken2.xml
+          xmllint --noout /tmp/truncated-fixed-broken2.xml
+          echo "Perl CLI smoke test passed."
+
+      - name: Validate PWA bundle
+        run: |
+          test -f web/manifest.webmanifest
+          test -f web/sw.js
+          test -f web/app/index.html
+          test -f web/icons/icon-192.png
+          test -f web/icons/icon-512.png
+          python3 -c "import json,sys; json.load(open('web/manifest.webmanifest'))"
+          echo "PWA bundle structure looks good."
