@@ -9,6 +9,10 @@ on:
         description: 'Release tag (e.g. v1.0.0). If empty, uses current commit SHA.'
         required: false
         default: ''
+      ref:
+        description: 'Git ref (tag/branch/SHA) to check out. If empty, uses the triggering ref.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -42,6 +46,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - uses: microsoft/setup-msbuild@v2
       - name: Restore & build (Release|x86)
         shell: pwsh
@@ -57,7 +63,26 @@ jobs:
           Copy-Item "XMLTruncator-Fixer/readme.txt" $stage -Force
           Copy-Item "LICENSE" $stage -Force
           Copy-Item "README.md" $stage -Force
-          Compress-Archive -Path "$stage/*" -DestinationPath "xmltrncatorfixr-${{ needs.resolve.outputs.version }}-windows-x86.zip"
+      - name: Sign Windows binaries (Azure Trusted Signing)
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
+          files-folder: stage/xmltrncatorfixr-windows
+          files-folder-filter: exe,msi,dll
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      - name: Zip signed Windows release
+        shell: pwsh
+        run: |
+          $stage = "stage/xmltrncatorfixr-windows"
+          Compress-Archive -Path "$stage/*" -DestinationPath "xmltrncatorfixr-${{ needs.resolve.outputs.version }}-windows-x86.zip" -Force
       - uses: actions/upload-artifact@v4
         with:
           name: windows
@@ -71,6 +96,8 @@ jobs:
         platform: [linux, macos, chromeos]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - name: Stage CLI bundle for ${{ matrix.platform }}
         shell: bash
         run: |
@@ -162,6 +189,8 @@ jobs:
         platform: [web, android, ios]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - name: Stage PWA bundle for ${{ matrix.platform }}
         shell: bash
         run: |
@@ -224,6 +253,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - uses: actions/download-artifact@v4
         with:
           path: dist
