@@ -1,8 +1,9 @@
-const CACHE = 'xmltf-v1';
+const CACHE = 'xmltf-v2';
 const ASSETS = [
   './',
   './app/',
   './app/index.html',
+  './app/immortal-inflate.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
