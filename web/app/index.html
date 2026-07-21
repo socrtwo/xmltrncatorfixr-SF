@@ -139,6 +139,8 @@
       </div>
     </div>
 
+    <div id="s2fileid"></div>
+
     <div class="status" id="status">Drop or pick a file to begin.</div>
 
     <details>
@@ -154,6 +156,7 @@
   </p>
 </div>
 
+<script src="s2-file-id.js"></script>
 <script src="immortal-inflate.js"></script>
 <script>
 (function () {
@@ -165,8 +168,10 @@
   const offsetEl  = $('offset');
   const statusEl  = $('status');
   const errEl     = $('errdetail');
+  const idPanelEl = $('s2fileid');
 
   let currentFile = null;
+  let currentReport = null;
 
   /* ---------- ZIP writer (replaces JSZip.generateAsync) ----------
    * The Immortal Inflater only reads ZIPs, so we rebuild the repaired archive
@@ -253,8 +258,33 @@
 
   function setFile(f) {
     currentFile = f;
+    currentReport = null;
+    idPanelEl.innerHTML = '';
     runBtn.disabled = !f;
-    if (f) setStatus(`Loaded: ${f.name} (${f.size.toLocaleString()} bytes). Ready.`);
+    if (f) {
+      setStatus(`Loaded: ${f.name} (${f.size.toLocaleString()} bytes). Ready.`);
+      identifyFile(f);
+    }
+  }
+
+  /* S2 File Identifier — first analysis step. Identifies the real file type
+   * from magic numbers, separates concatenated/embedded files, offers any
+   * foreign pieces for download with suite recommendations, and picks the
+   * bytes this app should repair (report.proceedBytes). Runs on-device. */
+  async function identifyFile(f) {
+    if (typeof S2FileID === 'undefined') return;
+    try {
+      const buf = await f.arrayBuffer();
+      const report = S2FileID.analyze(new Uint8Array(buf), {
+        programKey: 'xmltrncatorfixr',
+        fileName: f.name,
+      });
+      if (currentFile !== f) return; // superseded by a newer selection
+      currentReport = report;
+      S2FileID.renderPanel(idPanelEl, report);
+    } catch (_) {
+      currentReport = null; // fall back to repairing the raw file
+    }
   }
 
   fileInput.addEventListener('change', (e) => {
@@ -414,8 +444,18 @@
     errEl.textContent = '';
     const offset = Math.max(0, parseInt(offsetEl.value, 10) || 0);
     try {
-      const buf = await currentFile.arrayBuffer();
-      const isOffice = /\.(docx|xlsx|pptx|odt|ods|odp)$/i.test(currentFile.name);
+      // Repair the bytes the S2 File Identifier picked out (first segment of
+      // a handled type); foreign segments stay downloadable from the panel.
+      let buf, segExt = null;
+      if (currentReport && currentReport.proceedBytes) {
+        buf = currentReport.proceedBytes;
+        segExt = currentReport.proceedSegment && currentReport.proceedSegment.ext;
+      } else {
+        buf = await currentFile.arrayBuffer();
+      }
+      const isOffice = segExt
+        ? /^(docx|xlsx|pptx|odt|ods|odp)$/.test(segExt)
+        : /\.(docx|xlsx|pptx|odt|ods|odp)$/i.test(currentFile.name);
       const result = isOffice ? await fixDocx(buf, offset) : await fixXml(buf, offset);
       const baseName = currentFile.name.replace(/^(truncated-fixed-)?/, 'truncated-fixed-');
       const mime = isOffice ? currentFile.type || 'application/octet-stream' : 'application/xml';
